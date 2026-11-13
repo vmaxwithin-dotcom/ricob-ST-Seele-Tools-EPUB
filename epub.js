@@ -1,7 +1,7 @@
 import './vendor/jszip.min.js';
 
-export const DIALOGUE_COLOR = '#9274B4';
-export const EMPHASIS_COLOR = '#C49C70';
+export const DIALOGUE_COLOR = '#356C84';
+export const EMPHASIS_COLOR = '#8D536C';
 
 export function epubColor(value, fallback) {
     return /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;

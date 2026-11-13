@@ -338,3 +338,57 @@
         grid-template-columns: 1fr;
     }
 }
+#seele-menu .epub-controls,
+#seele-menu .epub-color-field {
+    display: grid;
+    gap: 6px;
+}
+
+#seele-menu .epub-color-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#seele-menu .epub-color-field > div,
+#seele-menu .epub-palette-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#seele-menu .epub-color-field input[type="color"] {
+    width: 30px;
+    height: 30px;
+    padding: 2px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+#seele-menu .epub-hex {
+    min-width: 0;
+    max-width: 9ch;
+}
+
+#seele-menu .epub-hex[aria-invalid="true"] {
+    outline: 1px solid #e68e8e;
+}
+
+#seele-menu .epub-swatches {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 5px;
+    padding: 4px 2px;
+}
+
+#seele-menu .epub-swatches button {
+    height: 30px;
+    border: 1px solid #888;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#seele-menu .epub-swatches button[aria-pressed="true"] {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+}

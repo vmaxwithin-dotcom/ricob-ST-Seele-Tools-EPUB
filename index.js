@@ -19,6 +19,7 @@ const dataManager = (() => {
         epubChapterSize: 1,
         epubDialogue: DIALOGUE_COLOR,
         epubEmphasis: EMPHASIS_COLOR,
+        epubPalette: ['#356C84', '#8D536C', '#57764D', '#925B43', '#625785', '#387970', '#796322', '#575E6B'],
     });
     const initChat = Object.freeze({
         bookMarks: "",
@@ -189,10 +190,27 @@ function openMenu(e) {
                         </div>
                         <div id="epubOptions" style="display:none">
                             <div class="label-row"><span class="label-title">EPUB 分章与配色</span></div>
-                            <div class="input-options">
+                            <div class="epub-controls">
                                 <label class="checkbox-label">每章消息数 <input type="number" id="epubChapterSize" class="text-input" style="width:5em" min="1" step="1"></label>
-                                <label class="checkbox-label">对话文字 <input type="color" id="epubDialogue"></label>
-                                <label class="checkbox-label">星号文本 <input type="color" id="epubEmphasis"></label>
+                                <div class="epub-color-row">
+                                    <div class="epub-color-field">
+                                        <label for="epubDialogueHex">对话文字</label>
+                                        <div><input type="color" id="epubDialogue" aria-label="对话文字取色器"><input type="text" class="text-input epub-hex" id="epubDialogueHex" data-color="epubDialogue" maxlength="7" spellcheck="false" autocomplete="off"></div>
+                                    </div>
+                                    <div class="epub-color-field">
+                                        <label for="epubEmphasisHex">星号文本</label>
+                                        <div><input type="color" id="epubEmphasis" aria-label="星号文本取色器"><input type="text" class="text-input epub-hex" id="epubEmphasisHex" data-color="epubEmphasis" maxlength="7" spellcheck="false" autocomplete="off"></div>
+                                    </div>
+                                </div>
+                                <div class="epub-swatches" role="group" aria-label="可保存的颜色"></div>
+                                <div class="epub-palette-actions">
+                                    <select id="epubColorTarget" class="select-input" aria-label="色槽操作的目标">
+                                        <option value="epubDialogue">对话文字</option>
+                                        <option value="epubEmphasis">星号文本</option>
+                                    </select>
+                                    <button type="button" class="menu_button" id="epubApplyColor">用此色</button>
+                                    <button type="button" class="menu_button" id="epubSaveColor">存入色槽</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -399,13 +417,70 @@ function bindMenuEvent($wrapper) {
     const $tab_exp = $wrapper.find('#tab-exp');
     const epubSettings = dataManager.extConf;
     $tab_exp.find('#epubChapterSize').val(epubSettings.epubChapterSize);
-    $tab_exp.find('#epubDialogue').val(epubColor(epubSettings.epubDialogue, DIALOGUE_COLOR));
-    $tab_exp.find('#epubEmphasis').val(epubColor(epubSettings.epubEmphasis, EMPHASIS_COLOR));
-    $tab_exp.on('change', '#epubChapterSize, #epubDialogue, #epubEmphasis', function() {
-        const value = this.id === 'epubChapterSize' ? this.valueAsNumber : this.value;
-        if (this.checkValidity() && value) {
-            dataManager.extConf[this.id] = value;
+    function setEpubColor(field, color) {
+        $tab_exp.find('#' + field).val(color);
+        $tab_exp.find('#' + field + 'Hex').val(color.toUpperCase()).removeAttr('aria-invalid');
+    }
+    setEpubColor('epubDialogue', epubColor(epubSettings.epubDialogue, DIALOGUE_COLOR));
+    setEpubColor('epubEmphasis', epubColor(epubSettings.epubEmphasis, EMPHASIS_COLOR));
+    function saveEpubColor(field, color) {
+        setEpubColor(field, color);
+        dataManager.extConf[field] = color;
+        dataManager.extSave();
+    }
+    $tab_exp.on('change', '#epubChapterSize', function() {
+        if (this.checkValidity() && Number.isSafeInteger(this.valueAsNumber)) {
+            dataManager.extConf.epubChapterSize = this.valueAsNumber;
             dataManager.extSave();
+        }
+    });
+    $tab_exp.on('input change', 'input[type="color"]', function(event) {
+        if (event.type === 'input') setEpubColor(this.id, this.value);
+        else saveEpubColor(this.id, this.value);
+    });
+    $tab_exp.on('input change', '.epub-hex', function(event) {
+        const color = epubColor('#' + this.value.trim().replace(/^#/, ''), null);
+        $(this).attr('aria-invalid', String(!color));
+        if (color) {
+            $tab_exp.find('#' + this.dataset.color).val(color);
+            if (event.type === 'change') saveEpubColor(this.dataset.color, color);
+        }
+    });
+    $tab_exp.on('keydown', '.epub-hex', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            this.blur();
+        }
+    });
+
+    const palette = Array.from({ length: 8 }, (_, index) => epubColor(epubSettings.epubPalette?.[index], '#777777'));
+    let selectedSlot = 0;
+    const $swatches = $tab_exp.find('.epub-swatches');
+    function renderSwatches() {
+        $swatches.children().each(function(index) {
+            const label = `色槽 ${index + 1} ${palette[index].toUpperCase()}`;
+            $(this).attr({ 'aria-label': label, title: label, 'aria-pressed': String(index === selectedSlot) })
+                .css('background-color', palette[index]);
+        });
+    }
+    palette.forEach(() => $swatches.append('<button type="button"></button>'));
+    $swatches.on('click', 'button', function() {
+        selectedSlot = $(this).index();
+        renderSwatches();
+    });
+    renderSwatches();
+    $tab_exp.on('click', '#epubApplyColor, #epubSaveColor', function() {
+        const field = $tab_exp.find('#epubColorTarget').val();
+        if (this.id === 'epubApplyColor') {
+            saveEpubColor(field, palette[selectedSlot]);
+        } else {
+            if ($tab_exp.find('#' + field + 'Hex').attr('aria-invalid') === 'true') {
+                return toastr.warning('请输入 6 位十六进制色号，例如 #356C84');
+            }
+            palette[selectedSlot] = $tab_exp.find('#' + field).val();
+            dataManager.extConf.epubPalette = palette.slice();
+            dataManager.extSave();
+            renderSwatches();
         }
     });
     $tab_exp.on('click', '#rangeAdd', function() {
@@ -481,6 +556,9 @@ function bindMenuEvent($wrapper) {
         let expText = "", novelIndex = 1, lastId = 0;
         const chat_list = getChats(expReplace).filter(chat => range.has(chat.id) && (expUser || !chat.is_user || chat.id == 0));
         if (expType === 'epub') {
+            if ($tab_exp.find('.epub-hex[aria-invalid="true"]').length) {
+                return toastr.warning('请输入 6 位十六进制色号，例如 #356C84');
+            }
             const chapterInput = $tab_exp.find('#epubChapterSize')[0];
             if (!Number.isSafeInteger(chapterInput.valueAsNumber) || !chapterInput.checkValidity()) {
                 return toastr.warning('每章消息数请输入大于 0 的整数');
