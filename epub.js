@@ -38,15 +38,16 @@ function formatInline(text, allowDialogue = true, allowEmphasis = true) {
 }
 
 function xhtml(title, css, body) {
-    return xmlHeader + '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">' +
+    return xmlHeader + '<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">' +
         '<head><title>' + title + '</title><style type="text/css">' + css + '</style></head><body>' + body + '</body></html>';
 }
 
 export async function createEpub({ title, author, messages, chapterSize, dialogueColor, emphasisColor }) {
     const zip = new globalThis.JSZip();
-    const safeTitle = escapeXml(title || '聊天记录');
-    const safeAuthor = escapeXml(author || 'SillyTavern User');
-    const bookId = 'urn:seele-tools:' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    const safeTitle = escapeXml(title ?? '').trim() || '聊天记录';
+    const safeAuthor = escapeXml(author ?? '').trim() || 'SillyTavern User';
+    const bookId = 'urn:uuid:' + globalThis.crypto.randomUUID();
+    const modified = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
     const size = Number.isSafeInteger(chapterSize) && chapterSize > 0 ? chapterSize : 1;
     const dialogue = epubColor(dialogueColor, DIALOGUE_COLOR);
     const emphasis = epubColor(emphasisColor, EMPHASIS_COLOR);
@@ -67,10 +68,39 @@ export async function createEpub({ title, author, messages, chapterSize, dialogu
     book.file('cover.xhtml', xhtml('封面', 'body{text-align:center;margin-top:30%;}h1{font-size:2.5em;}p{font-size:1.5em;color:#555;}',
         '<h1>' + safeTitle + '</h1><p>' + safeAuthor + '</p>'));
 
+    // Keep each content document small even when one message is very long.
+    const chunks = [];
+    for (const message of messages) {
+        const text = String(message.text ?? '');
+        let chunk = '';
+        let bytes = 0;
+        let first = true;
+        for (const char of text) {
+            const point = char.codePointAt(0);
+            const cost = point < 128 ? 1 : point < 2048 ? 2 : point < 65536 ? 3 : 4;
+            if (bytes + cost > 16000) {
+                chunks.push({ prefix: first ? message.prefix : '', text: chunk });
+                first = false; chunk = ''; bytes = 0;
+            }
+            chunk += char; bytes += cost;
+        }
+        if (chunk) chunks.push({ prefix: first ? message.prefix : '', text: chunk });
+    }
+    const groups = [];
+    let group = [], groupBytes = 0;
+    for (const message of chunks) {
+        const bytes = new TextEncoder().encode(message.text).length;
+        if (group.length && (group.length >= size || groupBytes + bytes > 32000)) {
+            groups.push(group); group = []; groupBytes = 0;
+        }
+        group.push(message); groupBytes += bytes;
+    }
+    if (group.length) groups.push(group);
+    if (!groups.length) throw new Error('没有可导出的聊天内容');
     const pages = [{ id: 'cover', title: '封面' }];
-    for (let start = 0; start < messages.length; start += size) {
+    for (const group of groups) {
         const page = { id: 'chapter' + pages.length, title: '第' + pages.length + '章' };
-        const body = messages.slice(start, start + size).map(({ prefix, text }) => {
+        const body = group.map(({ prefix, text }) => {
             const paragraphs = text.split(/\r\n|\r|\n/).filter(line => line.trim())
                 .map(line => '<p>' + formatInline(line) + '</p>').join('');
             return (prefix ? '<div class="sender-name">' + escapeXml(prefix) + '</div>' : '') + paragraphs;
@@ -83,11 +113,13 @@ export async function createEpub({ title, author, messages, chapterSize, dialogu
     const spine = pages.map(({ id }) => '<itemref idref="' + id + '"/>').join('');
     const navMap = pages.map(({ id, title }, index) => '<navPoint id="nav-' + id + '" playOrder="' + (index + 1) +
         '"><navLabel><text>' + title + '</text></navLabel><content src="' + id + '.xhtml"/></navPoint>').join('');
-    book.file('content.opf', xmlHeader + '<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="book-id">' +
+    book.file('content.opf', xmlHeader + '<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id">' +
         '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>' + safeTitle + '</dc:title><dc:creator>' + safeAuthor +
-        '</dc:creator><dc:language>zh-CN</dc:language><dc:identifier id="book-id">' + bookId + '</dc:identifier></metadata>' +
-        '<manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>' + manifest + '</manifest>' +
+        '</dc:creator><dc:language>zh-CN</dc:language><dc:identifier id="book-id">' + bookId + '</dc:identifier><meta property="dcterms:modified">' + modified + '</meta></metadata>' +
+        '<manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>' + manifest + '</manifest>' +
         '<spine toc="ncx">' + spine + '</spine><guide><reference type="title-page" title="封面" href="cover.xhtml"/></guide></package>');
+    book.file('nav.xhtml', xmlHeader + '<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="zh-CN"><head><title>目录</title></head><body><nav epub:type="toc" id="toc"><h1>目录</h1><ol>' +
+        pages.map(page => '<li><a href="' + page.id + '.xhtml">' + page.title + '</a></li>').join('') + '</ol></nav></body></html>');
     book.file('toc.ncx', xmlHeader + '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1" xml:lang="zh-CN">' +
         '<head><meta name="dtb:uid" content="' + bookId + '"/><meta name="dtb:depth" content="1"/>' +
         '<meta name="dtb:totalPageCount" content="0"/><meta name="dtb:maxPageNumber" content="0"/></head>' +

@@ -2,7 +2,7 @@ import { getFirstDisplayedMessageId, showMoreMessages, messageEdit } from '/scri
 import { getContext as ctx } from '/scripts/st-context.js';
 import { delay } from '/scripts/utils.js';
 import { oai_settings } from '/scripts/openai.js';
-import { createEpub, epubColor, DIALOGUE_COLOR, EMPHASIS_COLOR } from './epub.js';
+import { createEpub, epubColor, DIALOGUE_COLOR, EMPHASIS_COLOR } from './epub.js?v=1.2.2';
 
 const MODULE_NAME = 'seele_tools';
 let nowCard = null;
