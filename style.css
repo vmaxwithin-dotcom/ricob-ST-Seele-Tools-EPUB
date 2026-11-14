@@ -338,57 +338,33 @@
         grid-template-columns: 1fr;
     }
 }
-#seele-menu .epub-controls,
-#seele-menu .epub-color-field {
-    display: grid;
-    gap: 6px;
-}
-
-#seele-menu .epub-color-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-}
-
-#seele-menu .epub-color-field > div,
-#seele-menu .epub-palette-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-#seele-menu .epub-color-field input[type="color"] {
-    width: 30px;
-    height: 30px;
-    padding: 2px;
-    flex-shrink: 0;
-    cursor: pointer;
-}
-
-#seele-menu .epub-hex {
-    min-width: 0;
-    max-width: 9ch;
-}
-
-#seele-menu .epub-hex[aria-invalid="true"] {
-    outline: 1px solid #e68e8e;
-}
-
-#seele-menu .epub-swatches {
-    display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-    gap: 5px;
-    padding: 4px 2px;
-}
-
-#seele-menu .epub-swatches button {
-    height: 30px;
-    border: 1px solid #888;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-#seele-menu .epub-swatches button[aria-pressed="true"] {
-    outline: 2px solid currentColor;
-    outline-offset: 1px;
-}
+#seele-menu .epub-controls { display:grid; gap:8px; }
+.st-format-editor { color:#e7e7e7; background:#24272c; border:1px solid #666; border-radius:12px; width:min(650px,94vw); max-height:88vh; padding:16px; overflow:auto; box-sizing:border-box; font:16px/1.5 sans-serif; }
+.st-format-editor::backdrop { background:#0009; }
+.st-format-editor * { box-sizing:border-box; }
+.st-format-editor header,.st-format-editor footer,.st-format-editor .st-preset-bar,.st-format-editor .st-color-line { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.st-format-editor header { justify-content:space-between; }
+.st-format-editor footer { justify-content:flex-end; margin:16px 0 0; }
+.st-format-editor input:not([type=checkbox]):not([type=range]),.st-format-editor select,.st-format-editor button { font:inherit; color:inherit; background:#343940; border:1px solid #737982; border-radius:6px; padding:7px; min-width:0; }
+.st-format-editor button { cursor:pointer; }
+.st-format-editor input:focus-visible,.st-format-editor button:focus-visible,.st-format-editor select:focus-visible { outline:2px solid #9dc9ff; }
+.st-format-editor [aria-invalid=true] { outline:2px solid #ff8c8c; }
+.st-format-editor .st-preset-bar input,.st-format-editor .st-preset-bar select { flex:1; width:0; }
+.st-format-editor details { border:1px solid #555; border-radius:8px; margin:10px 0; }
+.st-format-editor summary { padding:10px; cursor:pointer; }
+.st-format-editor summary i,.st-format-editor .st-color-preview { display:inline-block; width:24px; height:24px; border:1px solid #aaa; border-radius:4px; vertical-align:middle; margin-right:8px; }
+.st-format-editor summary small { float:right; opacity:.75; }
+.st-format-editor .st-group-body { padding:0 10px 12px; }
+.st-format-editor .st-hex { width:11ch; flex-shrink:0; text-transform:uppercase; }
+.st-format-editor .st-slider { display:grid; grid-template-columns:4em 1fr 4em; gap:8px; align-items:center; margin:8px 0; }
+.st-format-editor .st-slider input { width:100%; min-width:0; }
+.st-format-editor .st-slider output { text-align:right; }
+.st-format-editor .st-favorites { display:flex; flex-wrap:wrap; gap:6px; margin:12px 0; }
+.st-format-editor .st-favorites button { width:30px; height:30px; }
+.st-format-editor .st-pair { display:grid; grid-template-columns:1.3fr 1fr 1fr 1.2fr 32px; gap:5px; margin:10px 0; }
+.st-format-editor .st-pair input,.st-format-editor .st-pair select { width:100%; }
+.st-format-editor .st-pair small { grid-column:1/-1; overflow-wrap:anywhere; opacity:.75; }
+.st-format-editor .st-example { border:1px dashed #888; border-radius:6px; padding:10px; margin-top:10px; overflow-wrap:anywhere; }
+.st-format-editor .st-hint { font-size:13px; opacity:.75; }
+.st-format-editor .st-status { color:#ffda96; min-height:1.5em; }
+@media(max-width:480px) { .st-format-editor {padding:10px;font-size:14px;} .st-format-editor .st-pair {grid-template-columns:1fr 1fr 1fr;} .st-format-editor .st-pair select {grid-column:1/3;} }
