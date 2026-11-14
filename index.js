@@ -908,8 +908,13 @@ function exportFile(content, filename, type = 'text/plain') {
         const blob = content instanceof Blob ? content : new Blob([content], { type: type + ';charset=utf-8' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = filename; a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        a.download = filename.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_');
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        const url = a.href;
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
         return true;
     } catch (e) { return false; }
 }

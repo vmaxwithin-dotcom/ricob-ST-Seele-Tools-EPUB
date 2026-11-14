@@ -38,20 +38,20 @@ function formatInline(text, allowDialogue = true, allowEmphasis = true) {
 }
 
 function xhtml(title, css, body) {
-    return xmlHeader + '<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">' +
+    return xmlHeader + '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">' +
         '<head><title>' + title + '</title><style type="text/css">' + css + '</style></head><body>' + body + '</body></html>';
 }
 
 export async function createEpub({ title, author, messages, chapterSize, dialogueColor, emphasisColor }) {
     const zip = new globalThis.JSZip();
-    const safeTitle = escapeXml(title);
+    const safeTitle = escapeXml(title || '聊天记录');
     const safeAuthor = escapeXml(author || 'SillyTavern User');
     const bookId = 'urn:seele-tools:' + Date.now() + '-' + Math.random().toString(36).slice(2);
     const size = Number.isSafeInteger(chapterSize) && chapterSize > 0 ? chapterSize : 1;
     const dialogue = epubColor(dialogueColor, DIALOGUE_COLOR);
     const emphasis = epubColor(emphasisColor, EMPHASIS_COLOR);
     const css = 'body{line-height:1.6;margin:0;padding:0;}' +
-        'p{text-indent:2em;margin:0.5em 0;overflow-wrap:break-word;}' +
+        'p{text-indent:2em;margin:0.5em 0;}' +
         'h2{text-align:center;color:#333;border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:20px;}' +
         '.sender-name{font-weight:bold;color:#555;text-indent:0;margin-top:1em;}' +
         '.st-dialogue{color:' + dialogue + ';}' +
@@ -87,7 +87,7 @@ export async function createEpub({ title, author, messages, chapterSize, dialogu
         '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>' + safeTitle + '</dc:title><dc:creator>' + safeAuthor +
         '</dc:creator><dc:language>zh-CN</dc:language><dc:identifier id="book-id">' + bookId + '</dc:identifier></metadata>' +
         '<manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>' + manifest + '</manifest>' +
-        '<spine toc="ncx">' + spine + '</spine></package>');
+        '<spine toc="ncx">' + spine + '</spine><guide><reference type="title-page" title="封面" href="cover.xhtml"/></guide></package>');
     book.file('toc.ncx', xmlHeader + '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1" xml:lang="zh-CN">' +
         '<head><meta name="dtb:uid" content="' + bookId + '"/><meta name="dtb:depth" content="1"/>' +
         '<meta name="dtb:totalPageCount" content="0"/><meta name="dtb:maxPageNumber" content="0"/></head>' +
