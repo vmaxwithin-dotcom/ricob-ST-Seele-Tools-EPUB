@@ -1,8 +1,9 @@
-import { defaults, validateGroups, escapeXml as esc, hexToHsv, hsvToHex } from './epub-formats.js?v=1.3.0';
+import { defaults, validateGroups, escapeXml as esc, hexToHsv, hsvToHex } from './epub-formats.js?v=1.3.1';
 const clone = value => JSON.parse(JSON.stringify(value));
 export function openFormatEditor(settings, save) {
     const dialog = document.createElement('dialog');
     dialog.className = 'st-format-editor';
+    dialog.id = 'seele-format-editor';
     let groups = clone(settings.epubGroups ?? defaults(settings.epubDialogue, settings.epubEmphasis));
     let presets = clone(settings.epubPresets ?? []);
     let palette = [...(settings.epubPalette ?? [])];
@@ -76,7 +77,7 @@ export function openFormatEditor(settings, save) {
             function favorites() {
                 const target=section.querySelector('.st-favorites');target.innerHTML='';
                 palette.filter(c=>/^#[\da-f]{6}$/i.test(c)).forEach(color=>{
-                    const button=document.createElement('button');button.type='button';button.style.background=color;button.title='应用 '+color;button.setAttribute('aria-label','应用 '+color);
+                    const button=document.createElement('button');button.type='button';button.style.setProperty('--seele-swatch', color);button.title='应用 '+color;button.setAttribute('aria-label','应用 '+color);
                     button.onclick=()=>{hex.value=color;hex.oninput();};target.appendChild(button);
                 });
             }

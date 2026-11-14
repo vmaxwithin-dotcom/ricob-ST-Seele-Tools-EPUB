@@ -2,10 +2,10 @@ import { getFirstDisplayedMessageId, showMoreMessages, messageEdit } from '/scri
 import { getContext as ctx } from '/scripts/st-context.js';
 import { delay } from '/scripts/utils.js';
 import { oai_settings } from '/scripts/openai.js';
-import { createEpub, DIALOGUE_COLOR, EMPHASIS_COLOR } from './epub.js?v=1.3.0';
+import { createEpub, DIALOGUE_COLOR, EMPHASIS_COLOR } from './epub.js?v=1.3.1';
 
-import { openFormatEditor } from './epub-editor.js?v=1.3.0';
-import { defaults, exportFilename } from './epub-formats.js?v=1.3.0';
+import { openFormatEditor } from './epub-editor.js?v=1.3.1';
+import { defaults, exportFilename } from './epub-formats.js?v=1.3.1';
 
 const MODULE_NAME = 'seele_tools';
 let nowCard = null;
@@ -19,6 +19,7 @@ const dataManager = (() => {
         blackTags: "",
         whiteTags: "",
         regexIds: "",
+        menuTheme: 'light',
         epubChapterSize: 1,
         epubGroups: null,
         epubPresets: [],
@@ -104,11 +105,12 @@ function openMenu(e) {
     }
 
     const $wrapper = $(`
-        <div id="seele-menu">
+        <div id="seele-menu" data-theme="${extConf.menuTheme === 'dark' ? 'dark' : 'light'}">
             <div class="header-group">
                 <div class="header-row">
                     <div class="header-title"><i class="fa-solid fa-seedling"></i> 聊天记录导出助手</div>
-                    <div class="header-tip">最大楼层: #${maxMesId}</div>
+                    <div class="header-meta"><div class="header-tip">最大楼层: #${maxMesId}</div>
+                    <button type="button" class="menu_button seele-theme-toggle" aria-label="夜间模式" aria-pressed="false">夜间</button></div>
                 </div>
                 <div class="header-tabs">
                     <div class="tab-header active" data-tab="tab-nav">快捷导航</div>
@@ -198,8 +200,6 @@ function openMenu(e) {
                             <div class="epub-controls">
                                 <label class="checkbox-label">每章消息数 <input type="number" id="epubChapterSize" class="text-input" style="width:5em" min="1" step="1"></label>
                                 <button type="button" class="menu_button" id="epubEditFormats">文字格式与颜色</button>
-                                <small id="epubFormatSummary"></small>
-                                <small>下载文件使用简洁英文名，书内保留原始标题。</small>
 
                             </div>
                         </div>
@@ -260,6 +260,20 @@ function openMenu(e) {
 }
 
 function bindMenuEvent($wrapper) {
+    const themeToggle = $wrapper.find('.seele-theme-toggle');
+    function renderTheme() {
+        const dark = $wrapper.attr('data-theme') === 'dark';
+        themeToggle.attr('aria-pressed', String(dark)).text(dark ? '日间' : '夜间');
+    }
+    renderTheme();
+    themeToggle.on('click', () => {
+        const theme = $wrapper.attr('data-theme') === 'dark' ? 'light' : 'dark';
+        $wrapper.attr('data-theme', theme);
+        dataManager.extConf.menuTheme = theme;
+        dataManager.extSave();
+        renderTheme();
+    });
+
     // 基础绑定逻辑
     $wrapper.find('.tab-header').on('click', function() {
         $wrapper.find('.tab-header').removeClass('active'); $(this).addClass('active');
@@ -407,15 +421,9 @@ function bindMenuEvent($wrapper) {
     const $tab_exp = $wrapper.find('#tab-exp');
     const epubSettings = dataManager.extConf;
     $tab_exp.find('#epubChapterSize').val(epubSettings.epubChapterSize);
-    function updateFormatSummary() {
-        const groups = dataManager.extConf.epubGroups ?? defaults(epubSettings.epubDialogue, epubSettings.epubEmphasis);
-        $tab_exp.find('#epubFormatSummary').text(groups.map(group => group.name).join(' · ') || '使用正文默认颜色');
-    }
-    updateFormatSummary();
     $tab_exp.on('click', '#epubEditFormats', () => openFormatEditor(dataManager.extConf, changes => {
         Object.assign(dataManager.extConf, changes);
         dataManager.extSave();
-        updateFormatSummary();
     }));
     $tab_exp.on('change', '#epubChapterSize', function() {
         if (this.checkValidity() && Number.isSafeInteger(this.valueAsNumber)) {

@@ -1,5 +1,5 @@
 import './vendor/jszip.min.js';
-import { defaults, formatter, escapeXml } from './epub-formats.js?v=1.3.0';
+import { defaults, formatter, escapeXml } from './epub-formats.js?v=1.3.1';
 
 export const DIALOGUE_COLOR = '#356C84';
 export const EMPHASIS_COLOR = '#8D536C';
