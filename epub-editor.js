@@ -1,9 +1,10 @@
-import { defaults, validateGroups, escapeXml as esc, hexToHsv, hsvToHex } from './epub-formats.js?v=1.3.1';
+import { defaults, validateGroups, escapeXml as esc, hexToHsv, hsvToHex } from './epub-formats.js?v=1.3.2';
 const clone = value => JSON.parse(JSON.stringify(value));
 export function openFormatEditor(settings, save) {
     const dialog = document.createElement('dialog');
     dialog.className = 'st-format-editor';
     dialog.id = 'seele-format-editor';
+    dialog.dataset.theme = settings.menuTheme === 'dark' ? 'dark' : 'light';
     let groups = clone(settings.epubGroups ?? defaults(settings.epubDialogue, settings.epubEmphasis));
     let presets = clone(settings.epubPresets ?? []);
     let palette = [...(settings.epubPalette ?? [])];

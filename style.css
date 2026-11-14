@@ -369,7 +369,7 @@
 .st-format-editor .st-status { color:#ffda96; min-height:1.5em; }
 @media(max-width:480px) { .st-format-editor {padding:10px;font-size:14px;} .st-format-editor .st-pair {grid-template-columns:1fr 1fr 1fr;} .st-format-editor .st-pair select {grid-column:1/3;} }
 /* Keep the plugin palette independent of SillyTavern theme rules. */
-dialog:has(#seele-menu), #seele-menu {
+dialog:has(#seele-menu), #seele-menu, dialog#seele-format-editor {
     --seele-surface: #fbfaf8;
     --seele-field: #fff;
     --seele-text: #252c35;
@@ -379,7 +379,7 @@ dialog:has(#seele-menu), #seele-menu {
     color: var(--seele-text) !important;
     background: var(--seele-surface) !important;
 }
-dialog:has(#seele-menu[data-theme="dark"]), #seele-menu[data-theme="dark"] {
+dialog:has(#seele-menu[data-theme="dark"]), #seele-menu[data-theme="dark"], dialog#seele-format-editor[data-theme="dark"] {
     --seele-surface: #202630;
     --seele-field: #2d3643;
     --seele-text: #edf2f8;
@@ -399,24 +399,20 @@ dialog:has(#seele-menu) .popup-controls .menu_button {
 #seele-menu :is(.btn-line, .btn-icon.active, .btn-gap.active) { color: #151e28 !important; }
 #seele-menu :is(input, select, textarea)::placeholder { color: var(--seele-text) !important; opacity:.65; }
 
-dialog#seele-format-editor {
-    color-scheme: light !important;
-    color: #252c35 !important;
-    background: #fbfaf8 !important;
-    border-color: #bbc6d0 !important;
-    text-shadow: none !important;
-}
+dialog#seele-format-editor { border-color: var(--seele-border) !important; text-shadow: none !important; }
 #seele-format-editor :is(input:not([type="checkbox"]):not([type="range"]), select, button) {
-    color: #252c35 !important;
-    background: #fff !important;
-    border: 1px solid #9cabb9 !important;
+    color: var(--seele-text) !important;
+    background: var(--seele-field) !important;
+    border: 1px solid var(--seele-border) !important;
     box-shadow: none !important;
     text-shadow: none !important;
 }
-#seele-format-editor input::placeholder { color:#596775 !important; opacity:1 !important; }
-#seele-format-editor input:is([type="checkbox"], [type="range"]) { accent-color:#2d6599 !important; }
-#seele-format-editor :is(input, button, select):focus-visible { outline:2px solid #2d6599 !important; }
+#seele-format-editor input::placeholder { color:var(--seele-text) !important; opacity:.7 !important; }
+#seele-format-editor input:is([type="checkbox"], [type="range"]) { accent-color:var(--seele-accent) !important; }
+#seele-format-editor :is(input, button, select):focus-visible { outline:2px solid var(--seele-accent) !important; }
 #seele-format-editor [aria-invalid="true"] { outline:2px solid #b02a32 !important; }
-#seele-format-editor details { border-color:#bfc8d1; }
+#seele-format-editor details { border-color:var(--seele-border); }
 #seele-format-editor .st-status { color:#854600 !important; }
 #seele-format-editor .st-favorites button[style] { background: var(--seele-swatch) !important; }
+
+#seele-format-editor[data-theme="dark"] .st-status { color:#ffd393 !important; }
