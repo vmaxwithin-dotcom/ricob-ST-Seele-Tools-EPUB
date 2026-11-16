@@ -1,4 +1,4 @@
-import { defaults, validateGroups, escapeXml as esc, hexToHsv, hsvToHex } from './epub-formats.js?v=1.3.8';
+import { defaults, validateGroups, escapeXml as esc, hexToHsv, hsvToHex } from './epub-formats.js?v=1.3.9';
 const clone = value => JSON.parse(JSON.stringify(value));
 export function openFormatEditor(settings, save) {
     const dialog = document.createElement('dialog');

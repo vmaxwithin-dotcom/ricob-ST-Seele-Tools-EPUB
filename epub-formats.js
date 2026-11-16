@@ -45,10 +45,7 @@ export function formatter(groups) {
             const nested = new Set(excluded); nested.add(rule);
             const body = depth < 8 ? render(inner, depth + 1, nested) : escapeXml(inner);
             const style = ['italic','bold','bold-italic'].includes(rule.style) ? ' st-' + rule.style : '';
-            let inlineStyle = 'color:' + groups[rule.index].color + ';display:inline;letter-spacing:0;word-spacing:0;';
-            if (rule.style === 'italic' || rule.style === 'bold-italic') inlineStyle += 'font-style:italic;';
-            if (rule.style === 'bold' || rule.style === 'bold-italic') inlineStyle += 'font-weight:bold;';
-            result += '<span class="st-format-' + rule.index + style + '" style="' + inlineStyle + '">' + (rule.keep ? escapeXml(rule.start) : '') + body + (rule.keep ? escapeXml(rule.end) : '') + '</span>';
+            result += '<span class="st-format-' + rule.index + style + '">' + (rule.keep ? escapeXml(rule.start) : '') + body + (rule.keep ? escapeXml(rule.end) : '') + '</span>';
             i = end + rule.end.length;
         }
         flush(); return result;

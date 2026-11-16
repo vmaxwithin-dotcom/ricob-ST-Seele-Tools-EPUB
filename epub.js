@@ -1,5 +1,5 @@
 import './vendor/jszip.min.js';
-import { defaults, formatter, escapeXml } from './epub-formats.js?v=1.3.8';
+import { defaults, formatter, escapeXml } from './epub-formats.js?v=1.3.9';
 
 export const DIALOGUE_COLOR = '#356C84';
 export const EMPHASIS_COLOR = '#8D536C';
@@ -31,7 +31,7 @@ export async function createEpub({ title, author, messages, chapterSize, dialogu
     const emphasis = epubColor(emphasisColor, EMPHASIS_COLOR);
     const formatGroups = groups ?? defaults(dialogue, emphasis);
     const formatInline = formatter(formatGroups);
-    // Keep essential spacing on the elements themselves for readers that rewrite stylesheets.
+    // Share repeated paragraph rules to keep long chapter files compact.
     const paragraphStyle = 'margin:0;padding:0;text-indent:2em;line-height:1.6;text-align:left;letter-spacing:0;word-spacing:0;overflow-wrap:break-word;word-wrap:break-word;';
     const headingStyle = 'margin:0;padding:0;text-indent:0;line-height:1.4;text-align:left;font-size:0.95em;font-weight:bold;font-style:normal;letter-spacing:0;word-spacing:0;overflow-wrap:break-word;word-wrap:break-word;page-break-after:avoid;';
     const chapterStyle = 'margin:0;padding:0.6em 0 0.65em;text-indent:0;font-size:1.25em;line-height:1.4;text-align:center;font-style:normal;letter-spacing:0;word-spacing:0;page-break-after:avoid;';
@@ -39,6 +39,8 @@ export async function createEpub({ title, author, messages, chapterSize, dialogu
         '.st-italic,.st-bold-italic{font-style:italic;}.st-bold,.st-bold-italic{font-weight:bold;}' +
         'body{line-height:1.6;max-width:36em;margin:0 auto;padding:0 1em;}' +
         'p{'+paragraphStyle+'}' +
+        '.chat-message p{'+paragraphStyle+'padding-top:0.25em;}.chat-message p.opening{padding-top:0;}' +
+        '.chat-message span{display:inline;letter-spacing:0;word-spacing:0;}' +
         '.chat-message{margin:0;padding:0;}.chat-message p{orphans:2;widows:2;}' +
         'h2{'+chapterStyle+'}.sender-name{'+headingStyle+'}';
     zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
@@ -61,9 +63,8 @@ export async function createEpub({ title, author, messages, chapterSize, dialogu
         const page={id:'chapter'+pages.length,title:'第'+pages.length+'章'};
         const body=group.map(({prefix,text}, messageIndex)=>{
             const paragraphs=text.split(/\r\n|\r|\n/).filter(line=>line.trim()).map((line,index)=>{
-                const gap=index===0 && messageIndex===0 && !prefix ? '0' : '0.25em';
-                const style=paragraphStyle+'padding-top:'+gap+';';
-                return '<p style="'+style+'">'+formatInline(line.trimStart())+'</p>';
+                const opening=index===0 && messageIndex===0 && !prefix;
+                return '<p'+(opening?' class="opening"':'')+'>'+formatInline(line.trimStart())+'</p>';
             }).join('');
             const heading=prefix?'<p class="sender-name" style="'+headingStyle+'padding-top:'+(messageIndex===0?'0':'0.65em')+';">'+escapeXml(prefix)+'</p>':'';
             return '<div class="chat-message" style="margin:0;padding:0;">'+heading+paragraphs+'</div>';
