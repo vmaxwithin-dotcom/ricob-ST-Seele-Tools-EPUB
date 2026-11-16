@@ -45,7 +45,10 @@ export function formatter(groups) {
             const nested = new Set(excluded); nested.add(rule);
             const body = depth < 8 ? render(inner, depth + 1, nested) : escapeXml(inner);
             const style = ['italic','bold','bold-italic'].includes(rule.style) ? ' st-' + rule.style : '';
-            result += '<span class="st-format-' + rule.index + style + '">' + (rule.keep ? escapeXml(rule.start) : '') + body + (rule.keep ? escapeXml(rule.end) : '') + '</span>';
+            let inlineStyle = 'color:' + groups[rule.index].color + ';display:inline;letter-spacing:0;word-spacing:0;';
+            if (rule.style === 'italic' || rule.style === 'bold-italic') inlineStyle += 'font-style:italic;';
+            if (rule.style === 'bold' || rule.style === 'bold-italic') inlineStyle += 'font-weight:bold;';
+            result += '<span class="st-format-' + rule.index + style + '" style="' + inlineStyle + '">' + (rule.keep ? escapeXml(rule.start) : '') + body + (rule.keep ? escapeXml(rule.end) : '') + '</span>';
             i = end + rule.end.length;
         }
         flush(); return result;
@@ -55,14 +58,6 @@ export function formatter(groups) {
 export function exportFilename() {
     // ASCII-only download name avoids URI fragments and provider-specific filename decoding.
     return 'chat-' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z') + '.epub';
-}
-// Plain text has no font metrics. Use half-width columns for ASCII and full-width for CJK.
-export function textHeading(text, centered = false) {
-    const columns = Array.from(text).reduce((width, char) => {
-        if (/\p{Mark}/u.test(char)) return width;
-        return width + (/^[\x20-\x7e]$/.test(char) ? 1 : 2);
-    }, 0);
-    return (centered ? '    ' : '') + text + '\n' + '─'.repeat(columns + (centered ? 8 : 4)) + '\n\n\n';
 }
 export function hexToHsv(hex) {
     const [r,g,b] = hex.match(/[\da-f]{2}/gi).map(v => parseInt(v,16)/255);

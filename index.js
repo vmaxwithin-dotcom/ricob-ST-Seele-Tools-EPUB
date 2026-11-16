@@ -2,10 +2,10 @@ import { getFirstDisplayedMessageId, showMoreMessages, messageEdit } from '/scri
 import { getContext as ctx } from '/scripts/st-context.js';
 import { delay } from '/scripts/utils.js';
 import { oai_settings } from '/scripts/openai.js';
-import { createEpub, DIALOGUE_COLOR, EMPHASIS_COLOR } from './epub.js?v=1.3.6';
+import { createEpub, DIALOGUE_COLOR, EMPHASIS_COLOR } from './epub.js?v=1.3.7';
 
-import { openFormatEditor } from './epub-editor.js?v=1.3.6';
-import { defaults, exportFilename, textHeading } from './epub-formats.js?v=1.3.6';
+import { openFormatEditor } from './epub-editor.js?v=1.3.7';
+import { defaults, exportFilename } from './epub-formats.js?v=1.3.7';
 
 const MODULE_NAME = 'seele_tools';
 let nowCard = null;
@@ -539,17 +539,15 @@ function bindMenuEvent($wrapper) {
             return;
         }
         chat_list.forEach(chat => {
-            let mes = chat.mes, start = "", lines = [], end = "\n\n\n";
+            let mes = chat.mes, start = "", lines = [], end = "\n\n";
             if (expNovel) {
                 // 当前为用户对话，或对话不连续时，开启新章节
-                if (chat.is_user || lastId + 1 != chat.id) start = textHeading(`第 ${novelIndex++} 章`, true);
+                if (chat.is_user || lastId + 1 != chat.id) start = `第 ${novelIndex++} 章\n\n`;
                 lastId = chat.id;
-            } else {
-                end += "--------------------\n\n";
             }
             // 构建消息头
             if (expSender || expMesId) {
-                lines.push(textHeading(`【 ${ expMesId ? `#${chat.id} ` : ""}${ expSender ? `${chat.name} ` : ""}】`).trimEnd() + '\n\n');
+                lines.push(`【 ${ expMesId ? `#${chat.id} ` : ""}${ expSender ? `${chat.name} ` : ""}】\n`);
             } else if (expNovel && chat.is_user){
                 mes = `【${mes}】`;
             }
