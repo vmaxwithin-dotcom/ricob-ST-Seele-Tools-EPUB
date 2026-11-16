@@ -1,5 +1,5 @@
 import './vendor/jszip.min.js';
-import { defaults, formatter, escapeXml } from './epub-formats.js?v=1.3.7';
+import { defaults, formatter, escapeXml } from './epub-formats.js?v=1.3.8';
 
 export const DIALOGUE_COLOR = '#356C84';
 export const EMPHASIS_COLOR = '#8D536C';
@@ -45,48 +45,25 @@ export async function createEpub({ title, author, messages, chapterSize, dialogu
     zip.file('META-INF/container.xml', xmlHeader + '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>');
     const book = zip.folder('OEBPS');
     book.file('cover.xhtml', xhtml('封面', 'body{text-align:center;margin-top:30%;}h1{font-size:2.5em;}p{font-size:1.5em;color:#555;}', '<h1>'+safeTitle+'</h1><p>'+safeAuthor+'</p>'));
-    const chunks = [];
-    for (const [messageIndex, message] of messages.entries()) {
-        let chunk = '', bytes = 0, first = true, continuedParagraph = false;
-        for (const char of String(message.text ?? '')) {
-            const point = char.codePointAt(0);
-            const cost = point < 128 ? 1 : point < 2048 ? 2 : point < 65536 ? 3 : 4;
-            if (bytes + cost > 16000) {
-                chunks.push({prefix:first ? message.prefix : '',text:chunk,messageIndex,continuedParagraph});
-                continuedParagraph = !/[\r\n]$/.test(chunk) && !/[\r\n]/.test(char);
-                first=false;chunk='';bytes=0;
-            }
-            chunk+=char;bytes+=cost;
-        }
-        if(chunk)chunks.push({prefix:first ? message.prefix : '',text:chunk,messageIndex,continuedParagraph});
-    }
+    // Count exported messages, never byte chunks. Keep paragraphs and delimiters intact.
     const chapters = [];
-    let group=[], groupBytes=0;
-    for(const message of chunks) {
-        const bytes=new TextEncoder().encode(message.text).length;
-        if(group.length && (group.length>=size || groupBytes+bytes>32000)) {
-            chapters.push(group);group=[];groupBytes=0;
-        }
-        group.push(message);groupBytes+=bytes;
+    let group=[];
+    for(const message of messages) {
+        const text=String(message.text ?? '');
+        if(!text.trim()) continue;
+        group.push({prefix:message.prefix,text});
+        if(group.length===size) {chapters.push(group);group=[];}
     }
     if(group.length)chapters.push(group);
     if(!chapters.length)throw new Error('没有可导出的聊天内容');
     const pages=[{id:'cover',title:'封面'}];
     for(const group of chapters) {
         const page={id:'chapter'+pages.length,title:'第'+pages.length+'章'};
-        // Byte-size chunks from the same message are not separate floors or paragraphs.
-        const pageMessages=[];
-        for(const chunk of group) {
-            const previous=pageMessages[pageMessages.length-1];
-            if(previous?.messageIndex===chunk.messageIndex) previous.text+=chunk.text;
-            else pageMessages.push({...chunk});
-        }
-        const body=pageMessages.map(({prefix,text,continuedParagraph}, messageIndex)=>{
+        const body=group.map(({prefix,text}, messageIndex)=>{
             const paragraphs=text.split(/\r\n|\r|\n/).filter(line=>line.trim()).map((line,index)=>{
-                const continuation=index===0 && continuedParagraph;
                 const gap=index===0 && messageIndex===0 && !prefix ? '0' : '0.25em';
-                const style=paragraphStyle+'padding-top:'+gap+';'+(continuation?'text-indent:0;':'');
-                return '<p'+(continuation?' class="continued-paragraph"':'')+' style="'+style+'">'+formatInline(line.trimStart())+'</p>';
+                const style=paragraphStyle+'padding-top:'+gap+';';
+                return '<p style="'+style+'">'+formatInline(line.trimStart())+'</p>';
             }).join('');
             const heading=prefix?'<p class="sender-name" style="'+headingStyle+'padding-top:'+(messageIndex===0?'0':'0.65em')+';">'+escapeXml(prefix)+'</p>':'';
             return '<div class="chat-message" style="margin:0;padding:0;">'+heading+paragraphs+'</div>';

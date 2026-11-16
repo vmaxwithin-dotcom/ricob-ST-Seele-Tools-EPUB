@@ -24,7 +24,7 @@ for(const text of ['“对话” ***心理*** /自定义/ < > & 😀\u0000\ud800
     assert.equal(bytes.subarray(30,38).toString(),'mimetype');
     assert.ok(zip.file('OEBPS/nav.xhtml'));
     if(text.length>100000) {
-        assert.ok(chapterCount>1);
+        assert.equal(chapterCount,1);
         let output='';
         for(const [name,file] of Object.entries(zip.files))if(/chapter\d+\.xhtml$/.test(name))output+=await file.async('string');
         assert.equal((output.match(/😀/gu)||[]).length,30000);
@@ -43,14 +43,39 @@ assert.doesNotMatch(layout,/heading-rule|border-bottom|text-align:justify|inline
 assert.match(layout,/<p class="sender-name" style="[^"]*padding-top:0.65em;">/);
 assert.match(layout,/<p style="[^"]*text-align:left;[^"]*padding-top:0.25em;">/);
 assert.match(format('*心理*'),/style="[^"]*display:inline;letter-spacing:0;word-spacing:0;font-style:italic;/);
-// A long message crossing an internal byte boundary must remain a single paragraph.
+// A long floor remains whole, including its paragraph and formatting delimiters.
 const longText='长'.repeat(6000);
 const {blob:longBlob}=await createEpub({messages:[{prefix:'#1',text:longText},{prefix:'#2',text:'下一楼'}],chapterSize:10,groups});
 const longZip=await JSZip.loadAsync(await longBlob.arrayBuffer());
 const longPage=await longZip.file('OEBPS/chapter1.xhtml').async('string');
 assert.equal((longPage.match(/class="chat-message"/g)||[]).length,2);
 assert.ok(longPage.includes('">'+longText+'</p>'));
-const {blob:splitBlob}=await createEpub({messages:[{text:longText}],chapterSize:1,groups});
+const {blob:splitBlob,chapterCount:singleCount}=await createEpub({messages:[{text:'“'+longText+'”'}],chapterSize:1,groups});
 const splitZip=await JSZip.loadAsync(await splitBlob.arrayBuffer());
-assert.match(await splitZip.file('OEBPS/chapter2.xhtml').async('string'),/<p class="continued-paragraph" style="[^"]*text-indent:0;">/);
+assert.equal(singleCount,1);
+assert.equal(splitZip.file('OEBPS/chapter2.xhtml'),null);
+assert.ok((await splitZip.file('OEBPS/chapter1.xhtml').async('string')).includes('>“'+longText+'”</span>'));
+for(const chapterSize of [1,2,3,10]) {
+    const messages=Array.from({length:5},(_,i)=>({prefix:'#'+i,text:'“'+longText+'”\nEND-'+i}));
+    const {blob,chapterCount}=await createEpub({messages,chapterSize,groups});
+    assert.equal(chapterCount,Math.ceil(messages.length/chapterSize));
+    const zip=await JSZip.loadAsync(await blob.arrayBuffer(),{checkCRC32:true});
+    const opf=await zip.file('OEBPS/content.opf').async('string');
+    const items=new Map([...opf.matchAll(/<item id="([^"]+)" href="([^"]+)"/g)].map(m=>[m[1],m[2]]));
+    for(const href of items.values()) assert.ok(zip.file('OEBPS/'+href),'Missing manifest file '+href);
+    const spine=[...opf.matchAll(/<itemref idref="([^"]+)"/g)].map(m=>m[1]);
+    assert.deepEqual(spine,['cover',...Array.from({length:chapterCount},(_,i)=>'chapter'+(i+1))]);
+    const nav=await zip.file('OEBPS/nav.xhtml').async('string');
+    const ncx=await zip.file('OEBPS/toc.ncx').async('string');
+    assert.deepEqual([...nav.matchAll(/<a href="([^"]+)"/g)].map(m=>m[1]),spine.map(id=>items.get(id)));
+    assert.deepEqual([...ncx.matchAll(/<content src="([^"]+)"/g)].map(m=>m[1]),spine.map(id=>items.get(id)));
+    for(let chapter=0;chapter<chapterCount;chapter++) {
+        const html=await zip.file('OEBPS/chapter'+(chapter+1)+'.xhtml').async('string');
+        const expected=messages.slice(chapter*chapterSize,(chapter+1)*chapterSize);
+        assert.equal((html.match(/class="chat-message"/g)||[]).length,expected.length);
+        for(const message of expected) assert.ok(html.includes('>'+message.prefix+'</p>'));
+        assert.equal((html.match(/END-\d/g)||[]).length,expected.length);
+    }
+}
+await assert.rejects(createEpub({messages:[{text:' \n\t'}],groups}),/没有/);
 console.log('EPUB regression tests passed');

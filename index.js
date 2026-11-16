@@ -2,10 +2,10 @@ import { getFirstDisplayedMessageId, showMoreMessages, messageEdit } from '/scri
 import { getContext as ctx } from '/scripts/st-context.js';
 import { delay } from '/scripts/utils.js';
 import { oai_settings } from '/scripts/openai.js';
-import { createEpub, DIALOGUE_COLOR, EMPHASIS_COLOR } from './epub.js?v=1.3.7';
+import { createEpub, DIALOGUE_COLOR, EMPHASIS_COLOR } from './epub.js?v=1.3.8';
 
-import { openFormatEditor } from './epub-editor.js?v=1.3.7';
-import { defaults, exportFilename } from './epub-formats.js?v=1.3.7';
+import { openFormatEditor } from './epub-editor.js?v=1.3.8';
+import { defaults, exportFilename } from './epub-formats.js?v=1.3.8';
 
 const MODULE_NAME = 'seele_tools';
 let nowCard = null;
@@ -198,7 +198,7 @@ function openMenu(e) {
                         <div id="epubOptions" style="display:none">
                             <div class="label-row"><span class="label-title">EPUB 分章与配色</span></div>
                             <div class="epub-controls">
-                                <label class="checkbox-label">每章消息数 <input type="number" id="epubChapterSize" class="text-input" style="width:5em" min="1" step="1"></label>
+                                <label class="checkbox-label">每章楼层数 <input type="number" id="epubChapterSize" class="text-input" style="width:5em" min="1" step="1" title="按筛选后实际导出的楼层计数，长楼层保持完整"></label>
                                 <button type="button" class="menu_button" id="epubEditFormats">文字格式与颜色</button>
 
                             </div>
@@ -507,7 +507,7 @@ function bindMenuEvent($wrapper) {
 
             const chapterInput = $tab_exp.find('#epubChapterSize')[0];
             if (!Number.isSafeInteger(chapterInput.valueAsNumber) || !chapterInput.checkValidity()) {
-                return toastr.warning('每章消息数请输入大于 0 的整数');
+                return toastr.warning('每章楼层数请输入大于 0 的整数');
             }
             const decoder = document.createElement('textarea');
             const messages = chat_list.map(chat => {
