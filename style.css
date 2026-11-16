@@ -416,3 +416,47 @@ dialog#seele-format-editor { border-color: var(--seele-border) !important; text-
 #seele-format-editor .st-favorites button[style] { background: var(--seele-swatch) !important; }
 
 #seele-format-editor[data-theme="dark"] .st-status { color:#ffd393 !important; }
+
+/* Reading-oriented editor, with consistent light and dark surfaces. */
+dialog#seele-format-editor { width:min(720px,94vw); padding:24px; border-radius:20px; box-shadow:0 24px 80px #0004; font-family:inherit; }
+#seele-format-editor::backdrop { background:#101b2b80; backdrop-filter:blur(4px); }
+#seele-format-editor header { margin-bottom:20px; align-items:flex-start; }
+#seele-format-editor header strong { font-size:1.3em; letter-spacing:.03em; }
+#seele-format-editor header p { margin:6px 0 0; }
+#seele-format-editor header button { width:36px; height:36px; padding:0; border-radius:50%; font-size:22px; }
+#seele-format-editor h3 { font-size:14px; margin:0 0 12px; font-weight:600; }
+#seele-format-editor .st-preset-panel { background:var(--seele-field); border:1px solid var(--seele-border); border-radius:14px; padding:16px; margin-bottom:24px; }
+#seele-format-editor .st-preset-panel .st-preset-bar:last-child { margin-bottom:0; }
+#seele-format-editor :is(button,input:not([type=checkbox]):not([type=range]),select) { border-radius:8px; min-height:38px; }
+#seele-format-editor button { transition:filter .15s,outline-color .15s; }
+#seele-format-editor button:hover:not(:disabled) { filter:brightness(.94); }
+#seele-format-editor button:disabled { opacity:.45; cursor:not-allowed; }
+#seele-format-editor details { margin:12px 0; border-radius:14px; overflow:hidden; }
+#seele-format-editor summary { padding:16px; list-style-position:inside; }
+#seele-format-editor details[open] summary { border-bottom:1px solid var(--seele-border); margin-bottom:16px; }
+#seele-format-editor summary i { width:14px; height:14px; border-radius:50%; margin:0 10px 0 4px; }
+#seele-format-editor .st-group-body { padding:0 16px 16px; }
+#seele-format-editor .st-color-panel { background:var(--seele-field); border-radius:12px; padding:16px; margin:16px 0; border:1px solid var(--seele-border); }
+#seele-format-editor .st-color-preview { width:38px; height:38px; border-radius:10px; margin-right:0; }
+#seele-format-editor .st-slider { margin:12px 0; font-size:13px; }
+#seele-format-editor .st-slider output { font-variant-numeric:tabular-nums; opacity:.7; }
+#seele-format-editor .st-favorites { display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:10px; margin:20px 0 14px; }
+#seele-format-editor .st-favorites button { width:100%; height:38px; min-height:0; border-radius:9px; }
+#seele-format-editor .st-favorites button[aria-pressed=true] { outline:2px solid var(--seele-accent); outline-offset:3px; }
+#seele-format-editor .st-palette-actions { display:flex; gap:8px; flex-wrap:wrap; }
+#seele-format-editor .st-pair { gap:8px; padding:12px; border-radius:10px; background:var(--seele-field); border:1px solid var(--seele-border); }
+#seele-format-editor .st-pair small { font-size:12px; }
+#seele-format-editor .st-example { border:1px solid var(--seele-border); background:var(--seele-field); border-radius:12px; padding:18px; line-height:1.9; }
+#seele-format-editor .st-hint { line-height:1.65; }
+#seele-format-editor .st-status { font-size:13px; margin:12px 0; }
+#seele-format-editor footer { border-top:1px solid var(--seele-border); padding-top:16px; }
+#seele-format-editor button[data-action=apply] { background:var(--seele-accent) !important; color:var(--seele-surface) !important; border-color:var(--seele-accent) !important; padding-inline:20px; font-weight:600; }
+@media(max-width:480px) {
+    dialog#seele-format-editor { padding:16px; border-radius:14px; }
+    #seele-format-editor .st-group-body { padding:0 10px 12px; }
+    #seele-format-editor .st-color-panel { padding:12px; }
+    #seele-format-editor .st-favorites { gap:7px; }
+    #seele-format-editor .st-favorites button { height:30px; }
+    #seele-format-editor summary { padding:12px; }
+    #seele-format-editor .st-preset-bar { flex-wrap:wrap; }
+}

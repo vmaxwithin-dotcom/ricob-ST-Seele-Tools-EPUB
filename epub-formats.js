@@ -56,6 +56,14 @@ export function exportFilename() {
     // ASCII-only download name avoids URI fragments and provider-specific filename decoding.
     return 'chat-' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z') + '.epub';
 }
+// Plain text has no font metrics. Use half-width columns for ASCII and full-width for CJK.
+export function textHeading(text, centered = false) {
+    const columns = Array.from(text).reduce((width, char) => {
+        if (/\p{Mark}/u.test(char)) return width;
+        return width + (/^[\x20-\x7e]$/.test(char) ? 1 : 2);
+    }, 0);
+    return (centered ? '    ' : '') + text + '\n' + '─'.repeat(columns + (centered ? 8 : 4)) + '\n\n\n';
+}
 export function hexToHsv(hex) {
     const [r,g,b] = hex.match(/[\da-f]{2}/gi).map(v => parseInt(v,16)/255);
     const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max-min;

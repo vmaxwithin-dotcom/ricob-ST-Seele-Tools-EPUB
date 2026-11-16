@@ -1,5 +1,5 @@
 import './vendor/jszip.min.js';
-import { defaults, formatter, escapeXml } from './epub-formats.js?v=1.3.2';
+import { defaults, formatter, escapeXml } from './epub-formats.js?v=1.3.6';
 
 export const DIALOGUE_COLOR = '#356C84';
 export const EMPHASIS_COLOR = '#8D536C';
@@ -33,27 +33,34 @@ export async function createEpub({ title, author, messages, chapterSize, dialogu
     const formatInline = formatter(formatGroups);
     const css = formatGroups.map((g,i) => '.st-format-' + i + '{color:' + g.color + ';}').join('') +
         '.st-italic,.st-bold-italic{font-style:italic;}.st-bold,.st-bold-italic{font-weight:bold;}' +
-        'body{line-height:1.6;margin:0;padding:0;}' +
-        'p{text-indent:2em;margin:0.5em 0;}' +
-        'h2{text-align:center;color:#333;border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:20px;}' +
-        '.sender-name{font-weight:bold;color:#555;text-indent:0;margin-top:1em;}';
+        'body{line-height:1.85;max-width:36em;margin:0 auto;padding:0 1em;}' +
+        'p{text-indent:2em;margin:0;text-align:justify;text-justify:inter-ideograph;line-break:strict;overflow-wrap:break-word;word-wrap:break-word;}' +
+        '.chat-message{margin:0;padding:0;}.chat-message+.chat-message{padding-top:0.7em;}' +
+        '.chat-message+.chat-message[data-heading="true"]{padding-top:1.4em;}' +
+        '.chat-message p{orphans:2;widows:2;}.chat-message p+p{margin-top:0.7em;}.chat-message p.continued-paragraph{text-indent:0;}' +
+        'h2{font-size:1.35em;line-height:1.5;text-align:center;color:inherit;margin:1.8em 0 2.6em;page-break-after:avoid;break-after:avoid;}' +
+        '.heading-rule{display:inline-block;box-sizing:border-box;max-width:100%;overflow-wrap:anywhere;word-wrap:break-word;}' +
+        'h2 .heading-rule{padding:0 2em 0.3em;border-bottom:1px solid #c9ced2;}' +
+        '.sender-name{font-weight:bold;font-size:0.9em;line-height:1.6;color:inherit;text-indent:0;margin:0;padding:0 0 2.1em;page-break-after:avoid;break-after:avoid;}' +
+        '.sender-name .heading-rule{padding:0 2em 0.25em 0;border-bottom:1px solid #c9ced2;}';
     zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
     zip.file('META-INF/container.xml', xmlHeader + '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>');
     const book = zip.folder('OEBPS');
     book.file('cover.xhtml', xhtml('封面', 'body{text-align:center;margin-top:30%;}h1{font-size:2.5em;}p{font-size:1.5em;color:#555;}', '<h1>'+safeTitle+'</h1><p>'+safeAuthor+'</p>'));
     const chunks = [];
-    for (const message of messages) {
-        let chunk = '', bytes = 0, first = true;
+    for (const [messageIndex, message] of messages.entries()) {
+        let chunk = '', bytes = 0, first = true, continuedParagraph = false;
         for (const char of String(message.text ?? '')) {
             const point = char.codePointAt(0);
             const cost = point < 128 ? 1 : point < 2048 ? 2 : point < 65536 ? 3 : 4;
             if (bytes + cost > 16000) {
-                chunks.push({prefix:first ? message.prefix : '',text:chunk});
+                chunks.push({prefix:first ? message.prefix : '',text:chunk,messageIndex,continuedParagraph});
+                continuedParagraph = !/[\r\n]$/.test(chunk) && !/[\r\n]/.test(char);
                 first=false;chunk='';bytes=0;
             }
             chunk+=char;bytes+=cost;
         }
-        if(chunk)chunks.push({prefix:first ? message.prefix : '',text:chunk});
+        if(chunk)chunks.push({prefix:first ? message.prefix : '',text:chunk,messageIndex,continuedParagraph});
     }
     const chapters = [];
     let group=[], groupBytes=0;
@@ -69,11 +76,18 @@ export async function createEpub({ title, author, messages, chapterSize, dialogu
     const pages=[{id:'cover',title:'封面'}];
     for(const group of chapters) {
         const page={id:'chapter'+pages.length,title:'第'+pages.length+'章'};
-        const body=group.map(({prefix,text})=>{
-            const paragraphs=text.split(/\r\n|\r|\n/).filter(line=>line.trim()).map(line=>'<p>'+formatInline(line)+'</p>').join('');
-            return (prefix?'<div class="sender-name">'+escapeXml(prefix)+'</div>':'')+paragraphs;
+        // Byte-size chunks from the same message are not separate floors or paragraphs.
+        const pageMessages=[];
+        for(const chunk of group) {
+            const previous=pageMessages[pageMessages.length-1];
+            if(previous?.messageIndex===chunk.messageIndex) previous.text+=chunk.text;
+            else pageMessages.push({...chunk});
+        }
+        const body=pageMessages.map(({prefix,text,continuedParagraph})=>{
+            const paragraphs=text.split(/\r\n|\r|\n/).filter(line=>line.trim()).map((line,index)=>'<p'+(index===0 && continuedParagraph?' class="continued-paragraph"':'')+'>'+formatInline(line.trimStart())+'</p>').join('');
+            return '<div class="chat-message"'+(prefix?' data-heading="true"':'')+'>'+(prefix?'<div class="sender-name"><span class="heading-rule">'+escapeXml(prefix)+'</span></div>':'')+paragraphs+'</div>';
         }).join('');
-        book.file(page.id+'.xhtml',xhtml(page.title,css,'<h2>'+page.title+'</h2>'+body));pages.push(page);
+        book.file(page.id+'.xhtml',xhtml(page.title,css,'<h2><span class="heading-rule">'+page.title+'</span></h2>'+body));pages.push(page);
     }
     const manifest=pages.map(({id})=>'<item id="'+id+'" href="'+id+'.xhtml" media-type="application/xhtml+xml"/>').join('');
     const spine=pages.map(({id})=>'<itemref idref="'+id+'"/>').join('');
